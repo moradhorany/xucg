@@ -37,6 +37,9 @@ static ucg_plan_attr_t ucg_planc_ucx_bcast_plan_attr[] = {
     {ucg_planc_ucx_bcast_kntree_prepare,
      10, "K-nomial tree", PLAN_DOMAIN},
 
+    {ucg_planc_ucx_bcast_multicast_prepare,
+     11, "switch-based multicast", PLAN_DOMAIN},
+
     {NULL},
 };
 UCG_PLAN_ATTR_REGISTER_TABLE(ucg_planc_ucx, UCG_COLL_TYPE_BCAST,
@@ -72,6 +75,11 @@ static ucg_config_field_t bcast_config_table[] = {
      "Adjustment of non-zero root processes",
      ucg_offsetof(ucg_planc_ucx_bcast_config_t, root_adjust),
      UCG_CONFIG_TYPE_BOOL},
+
+    {"BCAST_MCAST_ROOT_IP", "",
+     "enable switch-based multicast",
+     ucg_offsetof(ucg_planc_ucx_bcast_config_t, mcast_root_ip),
+     UCG_CONFIG_TYPE_STRING},
 
     {NULL}
 };
@@ -274,6 +282,10 @@ static ucg_plan_policy_t bcast_LG_LG[] = {
     {10, {0, 16384}, UCG_PLAN_UCX_PLAN_SCORE_2ND},
     UCG_PLAN_LAST_POLICY,
 };
+static ucg_plan_policy_t bcast_mcast[] = {
+    {11,  {0, UCG_PLAN_RANGE_MAX}, UCG_PLAN_UCX_PLAN_SCORE_1ST},
+    UCG_PLAN_LAST_POLICY,
+};
 
 static ucg_plan_policy_t* bcast_plan_policy[] = {
     bcast_4_4,
@@ -302,9 +314,17 @@ static ucg_plan_policy_t* bcast_plan_policy[] = {
     bcast_LG_LG,
 };
 
-const ucg_plan_policy_t *ucg_planc_ucx_get_bcast_plan_policy(ucg_planc_ucx_node_level_t node_level,
+const ucg_plan_policy_t *ucg_planc_ucx_get_bcast_plan_policy(ucg_planc_ucx_group_t *ucx_group,
+                                                             ucg_planc_ucx_node_level_t node_level,
                                                              ucg_planc_ucx_ppn_level_t ppn_level)
 {
+    ucg_planc_ucx_bcast_config_t *bcast_config;
+    bcast_config = UCG_PLANC_UCX_CONTEXT_BUILTIN_CONFIG_BUNDLE(ucx_group->context, bcast,
+                                                       UCG_COLL_TYPE_BCAST);
+    if (strcmp("", bcast_config->mcast_root_ip)) {
+        return bcast_mcast;
+    }
+
     int idx = node_level * PPN_LEVEL_NUMS + ppn_level;
     ucg_assert(idx < NODE_LEVEL_NUMS * PPN_LEVEL_NUMS);
     ucg_plan_policy_t *policy = bcast_plan_policy[idx];

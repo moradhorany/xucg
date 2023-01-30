@@ -14,14 +14,15 @@
 
 UCG_PLAN_ATTR_TABLE_DEFINE(ucg_planc_ucx);
 
-static const ucg_plan_policy_t* ucg_planc_ucx_get_plan_policy(ucg_coll_type_t coll_type,
+static const ucg_plan_policy_t* ucg_planc_ucx_get_plan_policy(ucg_planc_ucx_group_t *ucx_group,
+                                                              ucg_coll_type_t coll_type,
                                                               ucg_planc_ucx_node_level_t node_level,
                                                               ucg_planc_ucx_ppn_level_t ppn_level)
 {   
     const ucg_plan_policy_t *policy = NULL;
     switch (coll_type) {
         case UCG_COLL_TYPE_BCAST:
-            policy = ucg_planc_ucx_get_bcast_plan_policy(node_level, ppn_level);
+            policy = ucg_planc_ucx_get_bcast_plan_policy(ucx_group, node_level, ppn_level);
             break;
         case UCG_COLL_TYPE_ALLREDUCE:
             policy = ucg_planc_ucx_get_allreduce_plan_policy(node_level, ppn_level);
@@ -92,7 +93,7 @@ static ucg_status_t ucg_planc_ucx_add_default_plans(ucg_planc_ucx_group_t *ucx_g
     ucg_coll_type_t coll_type = UCG_COLL_TYPE_BCAST;
     for (; coll_type < UCG_COLL_TYPE_LAST; ++coll_type) {
         /* get internal policy */
-        default_policy = ucg_planc_ucx_get_plan_policy(coll_type, node_level, ppn_level);
+        default_policy = ucg_planc_ucx_get_plan_policy(ucx_group, coll_type, node_level, ppn_level);
         if (default_policy == NULL) {
             continue;
         }

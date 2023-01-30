@@ -13,6 +13,7 @@
 #include "util/algo/ucg_kntree.h"
 #include "util/algo/ucg_ring.h"
 #include "util/ucg_log.h"
+#include <ucp/api/ucp.h>
 
 typedef struct ucg_planc_ucx_bcast_config {
     /* configuration of kntree bcast */
@@ -24,7 +25,14 @@ typedef struct ucg_planc_ucx_bcast_config {
     /* configuration of node-aware kntree bcast */
     int na_kntree_inter_degree;
     int na_kntree_intra_degree;
+    char *mcast_root_ip;
 } ucg_planc_ucx_bcast_config_t;
+
+typedef struct ucg_algo_mcast_ctx {
+    int init_done;
+    ucp_coll_bcast_ctx_h ucp_mcast_ctx;
+    char *server_ip;
+} ucg_algo_mcast_ctx_t;
 
 /**
  * @brief Bcast op auxiliary information
@@ -33,6 +41,7 @@ typedef struct ucg_planc_ucx_bcast {
     union {
         ucg_algo_kntree_iter_t kntree_iter;
         ucg_algo_ring_iter_t ring_iter;
+        ucg_algo_mcast_ctx_t mcast_ctx;
         struct {
             ucg_algo_kntree_iter_t kntree_iter;
             ucg_algo_ring_iter_t ring_iter;
@@ -42,7 +51,8 @@ typedef struct ucg_planc_ucx_bcast {
     };
 } ucg_planc_ucx_bcast_t;
 
-const ucg_plan_policy_t *ucg_planc_ucx_get_bcast_plan_policy(ucg_planc_ucx_node_level_t node_level,
+const ucg_plan_policy_t *ucg_planc_ucx_get_bcast_plan_policy(ucg_planc_ucx_group_t *ucx_group,
+                                                             ucg_planc_ucx_node_level_t node_level,
                                                              ucg_planc_ucx_ppn_level_t ppn_level);
 
 /* xxx_op_new routines are provided for internal algorithm combination */
@@ -83,6 +93,9 @@ ucg_status_t ucg_planc_ucx_bcast_nta_kntree_prepare(ucg_vgroup_t *group,
 ucg_status_t ucg_planc_ucx_bcast_van_de_geijn_prepare(ucg_vgroup_t *vgroup,
                                                       const ucg_coll_args_t *args,
                                                       ucg_plan_op_t **op);
+ucg_status_t ucg_planc_ucx_bcast_multicast_prepare(ucg_vgroup_t *vgroup,
+                                              const ucg_coll_args_t *args,
+                                              ucg_plan_op_t **op);
 
 /* helper for adding op to meta op. */
 ucg_status_t ucg_planc_ucx_bcast_add_adjust_root_op(ucg_plan_meta_op_t *meta_op,
